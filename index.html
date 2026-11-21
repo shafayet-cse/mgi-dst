@@ -150,18 +150,46 @@ tailwind.config = {
 
       <!-- OVERVIEW -->
       <section id="tab-overview" class="tab-panel space-y-4">
-        <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></div>
+        <!-- Hero KPI row -->
+        <div id="kpiCards" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        <!-- Coverage counts -->
+        <div id="countCards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+        <!-- Product-wise KPI strip -->
+        <div class="panel p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold">Product-wise Performance</h3>
+            <span class="text-[10px] text-slate-400">Target · Landing · Ach %</span>
+          </div>
+          <div id="productKpis" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3"></div>
+        </div>
+        <!-- Charts row -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div class="panel p-4 xl:col-span-2">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-bold">Landing Trend + Month Forecast</h3>
+              <span class="text-[10px] text-slate-400">Day-wise → projected month end</span>
+            </div>
+            <div id="chartForecast" class="chart-box" style="min-height:340px"></div>
+          </div>
+          <div class="panel p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-bold">Target vs Achievement</h3>
+              <span class="text-[10px] text-slate-400">Gauge</span>
+            </div>
+            <div id="chartGauge" class="chart-box" style="min-height:340px"></div>
+          </div>
+        </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div class="panel p-4">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-bold">Target vs Landing by Wing</h3>
+              <h3 class="text-sm font-bold">Wing · Target vs Landing</h3>
               <span class="text-[10px] text-slate-400">Main sheet</span>
             </div>
             <div id="chartTarget" class="chart-box"></div>
           </div>
           <div class="panel p-4">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-bold">Achievement % by Wing</h3>
+              <h3 class="text-sm font-bold">Wing Achievement %</h3>
               <span class="text-[10px] text-slate-400">vs time progress</span>
             </div>
             <div id="chartAch" class="chart-box"></div>
@@ -453,21 +481,71 @@ function renderKPIs(rows){
   const pace=mtdAch-expected;
   const projected=safeDiv(totLanding,globalMeta.runningWD)*globalMeta.totalWD;
   const projAch=safeDiv(projected,totTarget)*100;
-  const gap=Math.max(0,totTarget-totLanding);
-  const cards=[
-    {label:'Target', value:fmtNum(totTarget)+u, sub:currentProduct, tone:'text-slate-800 dark:text-white'},
-    {label:'Landing Sales', value:fmtNum(totLanding)+u, sub:'Till date', tone:mtdAch>=expected?'text-emerald-600':'text-rose-500'},
-    {label:'Achievement', value:fmtPct(mtdAch), sub:(pace>=0?'+':'')+fmtPct(pace)+' vs time', tone:pace>=0?'text-emerald-600':'text-rose-500'},
-    {label:'Today Sales', value:fmtNum(totDaily)+u, sub:'Primary daily', tone:'text-blue-600'},
-    {label:'Month Projection', value:fmtNum(projected)+u, sub:fmtPct(projAch)+' of target', tone:projAch>=100?'text-emerald-600':'text-amber-600'},
-    {label:'Stock', value:fmtNum(totStock)+u, sub:'Closing stock', tone:'text-slate-600'}
+  const hero=[
+    {icon:'🎯', label:'Target', value:fmtNum(totTarget)+u, sub:currentProduct+' · full month', ring:'from-slate-500 to-slate-700', tone:'text-slate-800 dark:text-white'},
+    {icon:'📦', label:'Landing Sales', value:fmtNum(totLanding)+u, sub:'Till day '+globalMeta.cutoff, ring:'from-blue-500 to-indigo-600', tone:mtdAch>=expected?'text-emerald-600':'text-rose-500'},
+    {icon:'✅', label:'Achievement', value:fmtPct(mtdAch), sub:(pace>=0?'Ahead ':'Behind ')+fmtPct(Math.abs(pace))+' vs time', ring:pace>=0?'from-emerald-400 to-emerald-600':'from-rose-400 to-rose-600', tone:pace>=0?'text-emerald-600':'text-rose-500'},
+    {icon:'🔮', label:'Month Forecast', value:fmtNum(projected)+u, sub:fmtPct(projAch)+' of target at month end', ring:'from-violet-500 to-fuchsia-600', tone:projAch>=100?'text-emerald-600':'text-amber-600'}
   ];
-  $('#kpiCards').innerHTML=cards.map(c=>`
-    <div class="kpi">
-      <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">${c.label}</p>
-      <p class="text-lg sm:text-xl font-bold mt-1 ${c.tone} truncate">${c.value}</p>
-      <p class="text-[10px] text-slate-400 mt-1 truncate">${c.sub}</p>
+  $('#kpiCards').innerHTML=hero.map(c=>`
+    <div class="kpi relative overflow-hidden">
+      <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-gradient-to-br ${c.ring} opacity-10"></div>
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${c.ring} text-white flex items-center justify-center text-lg shadow-md">${c.icon}</div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">${c.label}</p>
+          <p class="text-xl sm:text-2xl font-bold mt-0.5 ${c.tone} truncate">${c.value}</p>
+          <p class="text-[10px] text-slate-400 mt-1 truncate">${c.sub}</p>
+        </div>
+      </div>
     </div>`).join('');
+
+  // Coverage / structure counts
+  const wings=new Set(rows.map(r=>r.Wing));
+  const regions=new Set(rows.map(r=>r.Wing+'|'+r.RM));
+  const territories=new Set(rows.map(r=>r.Wing+'|'+r.RM+'|'+r.TM));
+  const dealerCount=dealerRows.length? new Set(dealerRows.filter(d=>currentProduct==='All'||d.Product===currentProduct).map(d=>d.dealerId)).size : 0;
+  const dealerSales=dealerRows.filter(d=>currentProduct==='All'||d.Product===currentProduct).reduce((s,d)=>s+d.Sales,0);
+  const avgTerr=territories.size? totLanding/territories.size : 0;
+  const avgDealer=dealerCount? dealerSales/dealerCount : 0;
+  const counts=[
+    {label:'Wings', value:wings.size, sub:fmtNum(totLanding)+' sales', icon:'🗺️'},
+    {label:'Regions', value:regions.size, sub:'RM level', icon:'📍'},
+    {label:'Territories', value:territories.size, sub:'Avg '+fmtNum(avgTerr), icon:'🏪'},
+    {label:'Dealers (DB)', value:dealerCount||'—', sub:dealerCount?('Avg '+fmtNum(avgDealer)):'Upload Raw', icon:'🪪'},
+    {label:'Today Sales', value:fmtNum(totDaily), sub:u.trim()||'units', icon:'⚡'},
+    {label:'Stock', value:fmtNum(totStock), sub:'Closing', icon:'📋'}
+  ];
+  $('#countCards').innerHTML=counts.map(c=>`
+    <div class="kpi py-3">
+      <div class="flex items-center gap-2 mb-1"><span class="text-base">${c.icon}</span>
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">${c.label}</p></div>
+      <p class="text-lg font-bold text-slate-800 dark:text-white">${c.value}</p>
+      <p class="text-[10px] text-slate-400 mt-0.5 truncate">${c.sub}</p>
+    </div>`).join('');
+
+  // Product-wise mini KPIs (from all products, not filtered rows of current only)
+  const prods=PRODUCTS.filter(p=>p!=='All' && allProductData[p]);
+  $('#productKpis').innerHTML=prods.map(p=>{
+    const list=applyFilters(allProductData[p]||[]);
+    const t=list.reduce((s,r)=>s+r.Target,0);
+    const l=list.reduce((s,r)=>s+r.LandingSales,0);
+    const ach=safeDiv(l,t)*100;
+    const unit=PRODUCT_UNITS[p]||'';
+    const ok=ach>=expected;
+    return `<div class="rounded-xl border border-slate-100 dark:border-ink-800 bg-slate-50 dark:bg-ink-900/50 p-3 ${currentProduct===p?'ring-2 ring-blue-500':''}">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold">${p}</span>
+        <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">${unit}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-1 text-[10px] mb-2">
+        <div><span class="text-slate-400">Target</span><br><b>${fmtNum(t)}</b></div>
+        <div><span class="text-slate-400">Landing</span><br><b>${fmtNum(l)}</b></div>
+        <div><span class="text-slate-400">Ach</span><br><b class="${ok?'text-emerald-600':'text-rose-500'}">${fmtPct(ach)}</b></div>
+      </div>
+      ${progressBar(ach,ok)}
+    </div>`;
+  }).join('')||'<p class="text-xs text-slate-400">No product data</p>';
 }
 
 function renderTargetChart(rows){
@@ -476,14 +554,15 @@ function renderTargetChart(rows){
   if(charts.target) charts.target.dispose();
   charts.target=echarts.init(el,getTheme());
   charts.target.setOption({
+    animationDuration:900, animationEasing:'cubicOut',
     tooltip:{trigger:'axis',valueFormatter:v=>fmtNum(v)},
     legend:{top:0,textStyle:{fontSize:10}},
     grid:{left:50,right:16,top:36,bottom:40},
     xAxis:{type:'category',data:wings.map(w=>w.name.replace(/_W$/,'')),axisLabel:{fontSize:9,rotate:25}},
     yAxis:{type:'value',axisLabel:{fontSize:9,formatter:v=>fmtNum(v)}},
     series:[
-      {name:'Target',type:'bar',data:wings.map(w=>w.Target),itemStyle:{color:'#94a3b8'},barMaxWidth:22},
-      {name:'Landing',type:'bar',data:wings.map(w=>w.LandingSales),itemStyle:{color:'#2563eb'},barMaxWidth:22}
+      {name:'Target',type:'bar',data:wings.map(w=>w.Target),itemStyle:{color:'#94a3b8',borderRadius:[4,4,0,0]},barMaxWidth:22},
+      {name:'Landing',type:'bar',data:wings.map(w=>w.LandingSales),itemStyle:{color:'#2563eb',borderRadius:[4,4,0,0]},barMaxWidth:22}
     ]
   },true);
 }
@@ -494,16 +573,113 @@ function renderAchChart(rows){
   if(charts.ach) charts.ach.dispose();
   charts.ach=echarts.init(el,getTheme());
   charts.ach.setOption({
+    animationDuration:900, animationEasing:'cubicOut',
     tooltip:{trigger:'axis'},
     legend:{top:0,textStyle:{fontSize:10}},
     grid:{left:40,right:16,top:36,bottom:40},
     xAxis:{type:'category',data:wings.map(w=>w.name.replace(/_W$/,'')),axisLabel:{fontSize:9,rotate:25}},
     yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:9}},
     series:[
-      {name:'Ach %',type:'bar',data:wings.map(w=>+w.mtdAch.toFixed(1)),itemStyle:{color:'#10b981'},barMaxWidth:22},
-      {name:'Time progress',type:'line',data:wings.map(()=>+expected.toFixed(1)),itemStyle:{color:'#f59e0b'},lineStyle:{type:'dashed'},symbol:'none'}
+      {name:'Ach %',type:'bar',data:wings.map(w=>+w.mtdAch.toFixed(1)),itemStyle:{color:'#10b981',borderRadius:[4,4,0,0]},barMaxWidth:22},
+      {name:'Time progress',type:'line',data:wings.map(()=>+expected.toFixed(1)),itemStyle:{color:'#f59e0b'},lineStyle:{type:'dashed',width:2},symbol:'none'}
     ]
   },true);
+}
+
+function renderForecastChart(rows){
+  const el=$('#chartForecast'); if(!el) return;
+  if(charts.forecast) charts.forecast.dispose();
+  charts.forecast=echarts.init(el,getTheme());
+  const days=dayWise.days||[];
+  const daily=days.map(d=>dayWise.national[d]||0);
+  // If product selected, use product day series
+  let seriesDaily=daily;
+  if(currentProduct!=='All' && dayWise.products[currentProduct]){
+    seriesDaily=days.map(d=>(dayWise.products[currentProduct][d]||0));
+  }
+  let run=0; const cum=seriesDaily.map(v=>{run+=v;return run;});
+  const lastCum=cum.length?cum[cum.length-1]:0;
+  const rate=globalMeta.runningWD? lastCum/globalMeta.runningWD : 0;
+  // Forecast remaining working days on chart axis as future day labels
+  const futureLabels=[];
+  const forecastLine=[];
+  const actualLine=cum.slice();
+  // Build full month day axis 1..28-ish using cutoff and totalWD approximation
+  const maxDay=Math.max(globalMeta.cutoff||17, ...(days.length?days:[17]));
+  const endDay=Math.max(maxDay, 28);
+  const labels=[];
+  const actual=[];
+  const forecast=[];
+  let c=0;
+  const daySet=new Set(days);
+  for(let d=1;d<=endDay;d++){
+    labels.push('D'+d);
+    if(daySet.has(d)){
+      const idx=days.indexOf(d);
+      c=cum[idx];
+      actual.push(c);
+      forecast.push(null);
+    } else if(d>maxDay){
+      // project by daily rate * working-day fraction approx: use calendar day projection from rate
+      const projected=lastCum + rate*(d-maxDay)*(globalMeta.runningWD/Math.max(1,maxDay));
+      actual.push(null);
+      forecast.push(+projected.toFixed(0));
+    } else {
+      actual.push(null);
+      forecast.push(null);
+    }
+  }
+  // Connect forecast start
+  if(forecast.length && maxDay>=1 && maxDay<=endDay){
+    forecast[maxDay-1]=lastCum;
+  }
+  const totTarget=rows.reduce((s,r)=>s+r.Target,0);
+  charts.forecast.setOption({
+    animationDuration:1200, animationEasing:'cubicOut',
+    tooltip:{trigger:'axis',valueFormatter:v=>v==null?'—':fmtNum(v)},
+    legend:{top:0,textStyle:{fontSize:10}},
+    grid:{left:50,right:20,top:40,bottom:28},
+    xAxis:{type:'category',data:labels,axisLabel:{fontSize:9}},
+    yAxis:{type:'value',axisLabel:{fontSize:9,formatter:v=>fmtNum(v)}},
+    series:[
+      {name:'Landing (actual)',type:'line',data:actual,smooth:true,symbol:'circle',symbolSize:6,
+        lineStyle:{width:3,color:'#2563eb'},itemStyle:{color:'#2563eb'},
+        areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(37,99,235,.25)'},{offset:1,color:'rgba(37,99,235,0)'}]}}},
+      {name:'Forecast to month end',type:'line',data:forecast,smooth:true,symbol:'none',
+        lineStyle:{width:2,type:'dashed',color:'#8b5cf6'},itemStyle:{color:'#8b5cf6'}},
+      {name:'Target',type:'line',data:labels.map(()=>totTarget),symbol:'none',
+        lineStyle:{width:1.5,type:'dotted',color:'#94a3b8'},itemStyle:{color:'#94a3b8'}}
+    ]
+  },true);
+}
+
+function renderGaugeChart(rows){
+  const el=$('#chartGauge'); if(!el) return;
+  if(charts.gauge) charts.gauge.dispose();
+  charts.gauge=echarts.init(el,getTheme());
+  const totTarget=rows.reduce((s,r)=>s+r.Target,0);
+  const totLanding=rows.reduce((s,r)=>s+r.LandingSales,0);
+  const mtdAch=safeDiv(totLanding,totTarget)*100;
+  const expected=safeDiv(globalMeta.runningWD,globalMeta.totalWD)*100;
+  charts.gauge.setOption({
+    animationDuration:1000,
+    series:[{
+      type:'gauge', startAngle:220, endAngle:-40, min:0, max:100,
+      progress:{show:true, width:14, roundCap:true},
+      axisLine:{lineStyle:{width:14,color:[[0.5,'#f43f5e'],[0.75,'#f59e0b'],[1,'#10b981']]}},
+      axisTick:{show:false}, splitLine:{show:false}, axisLabel:{show:false},
+      pointer:{length:'55%', width:5},
+      anchor:{show:true,size:10,itemStyle:{color:'#2563eb'}},
+      detail:{valueAnimation:true, fontSize:28, fontWeight:700, formatter:v=>v.toFixed(1)+'%', offsetCenter:[0,'70%'], color:'#0f172a'},
+      title:{show:true, offsetCenter:[0,'92%'], fontSize:11, color:'#64748b'},
+      data:[{value:+mtdAch.toFixed(1), name:'Achievement'}]
+    }],
+    graphic:[{
+      type:'text', left:'center', top:'58%',
+      style:{text:'Time: '+expected.toFixed(0)+'%', fill:'#94a3b8', fontSize:11, textAlign:'center'}
+    }]
+  },true);
+}
 }
 function renderDayCharts(){
   const days=dayWise.days||[];
@@ -751,7 +927,12 @@ function refreshAll(){
   renderMaster(filtered);
   renderRisk(filtered);
   renderAI(filtered);
-  if(currentTab==='overview'){ renderTargetChart(filtered); renderAchChart(filtered); }
+  if(currentTab==='overview'){
+    renderTargetChart(filtered);
+    renderAchChart(filtered);
+    renderForecastChart(filtered);
+    renderGaugeChart(filtered);
+  }
   else if(currentTab==='trend') renderDayCharts();
   else if(currentTab==='risk') renderPareto(filtered);
   else if(currentTab==='dealer') renderDealerTable();
